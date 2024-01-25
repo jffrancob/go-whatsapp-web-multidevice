@@ -18,6 +18,7 @@ RUN pkger && go build -o /app/whatsapp
 #############################
 FROM alpine:3.19
 RUN apk update && apk add --no-cache vips-dev ffmpeg
+COPY ./docs /docs
 WORKDIR /app
 # Copy compiled from builder.
 COPY --from=builder /app/whatsapp /app/whatsapp

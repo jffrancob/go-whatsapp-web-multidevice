@@ -22,6 +22,9 @@ import (
 	"log"
 	"os"
 	"strings"
+	"io/ioutil"
+	"github.com/json-iterator/go"
+	"gopkg.in/yaml.v2"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -109,8 +112,34 @@ func runRest(_ *cobra.Command, _ []string) {
 	rest.InitRestGroup(app, groupService)
 
 	app.Get("/", func(c *fiber.Ctx) error {
+		serverURL := os.Getenv("SERVER_URL")
+		if len(serverURL) != 0 {
+			apiDoc, err := ioutil.ReadFile("/docs/openapi.yaml")
+			if err != nil {
+				log.Fatalln(err)
+			}
+			var spec map[string]any
+			err = yaml.Unmarshal([]byte(apiDoc), &spec)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			delete(spec, "servers")
+			spec["servers"] = []map[string]interface{}{
+				{"url": string(serverURL)},
+			}
+			var json = jsoniter.ConfigCompatibleWithStandardLibrary
+			jsonSpec, err := json.MarshalToString(spec)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			return c.Render("doc", fiber.Map{
+				"AppHost":        fmt.Sprintf("%s", c.BaseURL()),
+				"Spec":           jsonSpec,
+				"BasicAuthToken": c.UserContext().Value("token"),
+			})
+		}
 		return c.Render("index", fiber.Map{
-			"AppHost":        fmt.Sprintf("%s://%s", c.Protocol(), c.Hostname()),
+			"AppHost":        fmt.Sprintf("%s", c.BaseURL()),
 			"AppVersion":     config.AppVersion,
 			"BasicAuthToken": c.UserContext().Value("token"),
 			"MaxFileSize":    humanize.Bytes(uint64(config.WhatsappSettingMaxFileSize)),

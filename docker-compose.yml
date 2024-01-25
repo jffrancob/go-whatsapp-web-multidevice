@@ -6,7 +6,10 @@ services:
       options:
         max-size: "200k"
         max-file: "10"
-    image: "aldinokemal2104/go-whatsapp-web-multidevice:latest"
+    image: "jffrancob/wa-multidevice:0.0.5"
+    command: --os=Linux --debug true
+    environment:
+      - SERVER_URL=http://${API_HOST-localhost}:${API_PORT-3000}
     build:
       context: .
       dockerfile: ./docker/golang.Dockerfile
