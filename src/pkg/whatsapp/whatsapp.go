@@ -264,8 +264,20 @@ func handler(rawEvt interface{}) {
 	case *events.Receipt:
 		if evt.Type == types.ReceiptTypeRead || evt.Type == types.ReceiptTypeReadSelf {
 			log.Infof("%v was read by %s at %s", evt.MessageIDs, evt.SourceString(), evt.Timestamp)
+			if config.WhatsappWebhook != "" && 
+				!isFromMySelf(evt.SourceString()) {
+				if err := forwardReceipt(evt); err != nil {
+					logrus.Error("Failed forward to webhook", err)
+				}
+			}
 		} else if evt.Type == types.ReceiptTypeDelivered {
 			log.Infof("%s was delivered to %s at %s", evt.MessageIDs[0], evt.SourceString(), evt.Timestamp)
+			if config.WhatsappWebhook != "" && 
+				!isFromMySelf(evt.SourceString()) {
+				if err := forwardReceipt(evt); err != nil {
+					logrus.Error("Failed forward to webhook", err)
+				}	
+			}
 		}
 	case *events.Presence:
 		if evt.Unavailable {
@@ -297,6 +309,34 @@ func handler(rawEvt interface{}) {
 	case *events.AppState:
 		log.Debugf("App state event: %+v / %+v", evt.Index, evt.SyncActionValue)
 	}
+}
+
+// forwardReceipt is a helper function to forward receipt to webhook url
+func forwardReceipt(evt *events.Receipt) error {
+	logrus.Info("Forwarding receipt to webhook:", config.WhatsappWebhook)
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	body := map[string]interface{}{
+		"source":    evt.SourceString(),
+		"timestamp": evt.Timestamp,
+		"type":      evt.Type,
+		"ids":       evt.MessageIDs,
+	}
+
+	postBody, err := json.Marshal(body)
+	if err != nil {
+		return pkgError.WebhookError(fmt.Sprintf("Failed to marshal body: %v", err))
+	}
+
+	req, err := http.NewRequest(http.MethodPost, config.WhatsappWebhook, bytes.NewBuffer(postBody))
+	if err != nil {
+		return pkgError.WebhookError(fmt.Sprintf("error when create http object %v", err))
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if _, err = client.Do(req); err != nil {
+		return pkgError.WebhookError(fmt.Sprintf("error when submit webhook %v", err))
+	}
+	return nil
 }
 
 // forwardToWebhook is a helper function to forward event to webhook url

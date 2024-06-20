@@ -8,6 +8,7 @@ COPY ./src .
 
 # Fetch dependencies.
 RUN go mod download
+RUN go mod tidy
 # Build the binary.
 RUN go build -o /app/whatsapp
 
@@ -16,6 +17,7 @@ RUN go build -o /app/whatsapp
 #############################
 FROM alpine:3.19
 RUN apk update && apk add --no-cache ffmpeg
+COPY ./docs /docs
 WORKDIR /app
 # Copy compiled from builder.
 COPY --from=builder /app/whatsapp /app/whatsapp
