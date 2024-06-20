@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: WhatsApp API MultiDevice
-  version: 3.11.0
+  version: 3.10.1
   description: This API is used for sending whatsapp via API
 servers:
   - url: http://localhost:3000
@@ -103,8 +103,9 @@ paths:
         - name: phone
           in: query
           schema:
-            type: integer
-          example: '6289685028129@s.whatsapp.net'
+            type: string
+          example: '573148901850'
+          description: Phone number with country code
       responses:
         '200':
           description: OK
@@ -134,8 +135,9 @@ paths:
         - name: phone
           in: query
           schema:
-            type: integer
-          example: '6289685028129@s.whatsapp.net'
+            type: string
+          example: '573148901850'
+          description: Phone number with country code
         - name: is_preview
           in: query
           schema:
@@ -206,11 +208,11 @@ paths:
               properties:
                 phone:
                   type: string
-                  example: '6289685028129@s.whatsapp.net'
+                  example: '573148901850'
                   description: Phone number with country code
                 message:
                   type: string
-                  example: selamat malam
+                  example: This is a message
                   description: Message to send
                 reply_message_id:
                   type: string
@@ -249,11 +251,11 @@ paths:
               properties:
                 phone:
                   type: string
-                  example: '6289685028129@s.whatsapp.net'
+                  example: '573148901850'
                   description: Phone number with country code
                 caption:
                   type: string
-                  example: selamat malam
+                  example: This is a message
                   description: Caption to send
                 view_once:
                   type: boolean
@@ -300,7 +302,7 @@ paths:
               properties:
                 phone:
                   type: string
-                  example: '6289685028129@s.whatsapp.net'
+                  example: '573148901850'
                   description: Phone number with country code
                 audio:
                   type: string
@@ -339,11 +341,11 @@ paths:
               properties:
                 phone:
                   type: string
-                  example: '6289685028129@s.whatsapp.net'
+                  example: '573148901850'
                   description: Phone number with country code
                 caption:
                   type: string
-                  example: selamat malam
+                  example: This is a message
                   description: Caption to send
                 file:
                   type: string
@@ -382,7 +384,7 @@ paths:
               properties:
                 phone:
                   type: string
-                  example: '6289685028129@s.whatsapp.net'
+                  example: '573148901850'
                   description: Phone number with country code
                 caption:
                   type: string
@@ -433,15 +435,15 @@ paths:
               properties:
                 phone:
                   type: string
-                  example: '6289685024051@s.whatsapp.net'
+                  example: '573148901850'
                   description: Phone number with country code
                 contact_name:
                   type: string
-                  example: Aldino Kemal
+                  example: Bob Dylan
                   description: Contact name
                 contact_phone:
                   type: string
-                  example: '6289685024992'
+                  example: '573208963960'
                   description: Contact phone number
       responses:
         '200':
@@ -476,7 +478,7 @@ paths:
               properties:
                 phone:
                   type: string
-                  example: '6289685024051@s.whatsapp.net'
+                  example: '573148901850'
                   description: Phone number with country code
                 link:
                   type: string
@@ -484,7 +486,7 @@ paths:
                   description: Link to send
                 caption:
                   type: string
-                  example: 'Halo ini contoh caption'
+                  example: 'This is a caption'
                   description: Caption to send
       responses:
         '200':
@@ -519,15 +521,15 @@ paths:
               properties:
                 phone:
                   type: string
-                  example: '6289685024051@s.whatsapp.net'
+                  example: '573148901850'
                   description: Phone number with country code
                 latitude:
                   type: string
-                  example: "-7.797068"
+                  example: '4.8087158'
                   description: Latitude coordinate
                 longitude:
                   type: string
-                  example: '110.370529'
+                  example: '-75.6787543'
                   description: Longitude coordinate
       responses:
         '200':
@@ -564,17 +566,17 @@ paths:
                 phone:
                   type: string
                   description: The WhatsApp phone number to send the poll to, including the '@s.whatsapp.net' suffix.
-                  example: '6289685024421@s.whatsapp.net'
+                  example: '573148901850@s.whatsapp.net'
                 question:
                   type: string
                   description: The question for the poll.
-                  example: 'Siapa Nama Avatar The Last Air Bender?'
+                  example: 'How would you rate our service?'
                 options:
                   type: array
                   description: The options for the poll.
                   items:
                     type: string
-                  example: [ 'Zuko', 'Aang', 'Katara' ]
+                  example: [ 'Bad', 'Normal', 'Good', 'Excelent' ]
                 max_answer:
                   type: integer
                   description: The maximum number of answers allowed for the poll.
@@ -624,7 +626,7 @@ paths:
               properties:
                 phone:
                   type: string
-                  example: '6289685024051@s.whatsapp.net'
+                  example: '573148901850'
                   description: Phone number with country code
       responses:
         '200':
@@ -666,7 +668,7 @@ paths:
               properties:
                 phone:
                   type: string
-                  example: '6289685024051@s.whatsapp.net'
+                  example: '573148901850'
                   description: Phone number with country code
                 emoji:
                   type: string
@@ -712,7 +714,7 @@ paths:
               properties:
                 phone:
                   type: string
-                  example: '62819273192397132@s.whatsapp.net'
+                  example: '573148901850'
                   description: Phone number with country code
                 message:
                   type: string
@@ -760,13 +762,11 @@ paths:
                   items:
                     type: string
                     example:
-                      - '6819241294719274'
-                      - '6829241294719274'
-                      - '6839241294719274'
+                      - '573148901850'
+                      - '573208963960'
                   example:
-                    - '6819241294719274'
-                    - '6829241294719274'
-                    - '6839241294719274'
+                    - '573148901850'
+                    - '573208963960'
       responses:
         '200':
           description: OK
@@ -806,13 +806,11 @@ paths:
                   items:
                     type: string
                     example:
-                      - '6819241294719274'
-                      - '6829241294719274'
-                      - '6839241294719274'
+                      - '573148901850'
+                      - '573208963960'
                   example:
-                    - '6819241294719274'
-                    - '6829241294719274'
-                    - '6839241294719274'
+                      - '573148901850'
+                      - '573208963960'
       responses:
         '200':
           description: OK
@@ -933,7 +931,7 @@ components:
             properties:
               participant:
                 type: string
-                example: '6289987391723@s.whatsapp.net'
+                example: '573148901850@s.whatsapp.net'
               status:
                 type: string
                 example: success
@@ -998,7 +996,7 @@ components:
           properties:
             verified_name:
               type: string
-              example: Aldino Kemal
+              example: Bob Dylan
             status:
               type: string
               example: Hello World
@@ -1012,7 +1010,7 @@ components:
                 properties:
                   User:
                     type: string
-                    example: 6289685021291
+                    example: 573148901850
                   Agent:
                     type: integer
                     example: 0
@@ -1107,10 +1105,11 @@ components:
             properties:
               name:
                 type: string
-                example: 'Aldino Kemal'
+                example: 'Bob Dylan'
               device:
                 type: string
-                example: '628960561XXX.0:64@s.whatsapp.net'
+                example: '573148901850'
+                description: Phone number with country code
     LoginResponse:
       type: object
       properties:

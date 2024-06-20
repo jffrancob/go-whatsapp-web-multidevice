@@ -20,6 +20,8 @@ require (
 	go.mau.fi/libsignal v0.1.0
 	go.mau.fi/whatsmeow v0.0.0-20240327124018-350073db195c
 	google.golang.org/protobuf v1.33.0
+	gopkg.in/yaml.v2 v2.4.0
+	github.com/json-iterator/go v1.1.12
 )
 
 require (
