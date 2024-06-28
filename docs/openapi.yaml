@@ -626,7 +626,7 @@ paths:
               properties:
                 phone:
                   type: string
-                  example: '6289685024051@s.whatsapp.net'
+                  example: '573148901850'
                   description: Phone number with country code
       responses:
         '200':
