@@ -101,6 +101,7 @@ You can fork or edit this source code !
 | Feature | Menu                         | Method | URL                           | 
 |---------|------------------------------|--------|-------------------------------|
 | ✅       | Login                        | GET    | /app/login                    |
+| ❌       | Login With Pair Code         | GET    | /app/login-with-code          |
 | ✅       | Logout                       | GET    | /app/logout                   |  
 | ✅       | Reconnect                    | GET    | /app/reconnect                | 
 | ✅       | Devices                      | GET    | /app/devices                  | 
@@ -121,13 +122,14 @@ You can fork or edit this source code !
 | ✅       | React Message                | POST   | /message/:message_id/reaction |
 | ✅       | Delete Message               | POST   | /message/:message_id/delete   |
 | ✅       | Edit Message                 | POST   | /message/:message_id/update   |
+| ❌       | Star message                 | POST   | /message/:message_id/star     |
 | ✅       | Join Group With Link         | POST   | /group/join-with-link         |
 | ✅       | Leave Group                  | POST   | /group/leave                  |
 | ✅       | Create Group                 | POST   | /group                        |
 | ✅       | Add Participants in Group    | POST   | /group/participants           |
-| ❌       | Remove Participant in Group  | DELETE | /group/participants           |
-| ❌       | Promote Participant in Group | POST   | /group/participants/promote   |
-| ❌       | Demote Participant in Group  | POST   | /group/participants/demote    |
+| ✅       | Remove Participant in Group  | POST   | /group/participants/remove    |
+| ✅       | Promote Participant in Group | POST   | /group/participants/promote   |
+| ✅       | Demote Participant in Group  | POST   | /group/participants/demote    |
 
 ```
 ✅ = Available
@@ -136,7 +138,7 @@ You can fork or edit this source code !
 
 ### App User Interface
 
-1. Homepage ![Homepage](https://i.ibb.co.com/681JTHK/image.png)
+1. Homepage ![Homepage](https://i.ibb.co.com/d05L4VX/homepage.png)
 2. Login ![Login](https://i.ibb.co.com/jkcB15R/login.png?v=1)
 3. Send Message ![Send Message](https://i.ibb.co.com/rc3NXMX/send-message.png?v1)
 4. Send Image ![Send Image](https://i.ibb.co.com/BcFL3SD/send-image.png?v1)
