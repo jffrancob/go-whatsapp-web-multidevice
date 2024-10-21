@@ -116,6 +116,7 @@ func runRest(_ *cobra.Command, _ []string) {
 	userService := services.NewUserService(cli)
 	messageService := services.NewMessageService(cli)
 	groupService := services.NewGroupService(cli)
+	newsletterService := services.NewNewsletterService(cli)
 
 	// Rest
 	rest.InitRestApp(app, appService)
@@ -123,6 +124,7 @@ func runRest(_ *cobra.Command, _ []string) {
 	rest.InitRestUser(app, userService)
 	rest.InitRestMessage(app, messageService)
 	rest.InitRestGroup(app, groupService)
+	rest.InitRestNewsletter(app, newsletterService)
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		serverURL := os.Getenv("SERVER_URL")
