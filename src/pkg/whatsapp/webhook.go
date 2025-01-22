@@ -32,14 +32,13 @@ func forwardToWebhook(evt *events.Message) error {
 // forwardReceipt is a helper function to forward receipt to webhook url
 func forwardReceipt(evt *events.Receipt) error {
 	logrus.Info("Forwarding receipt to webhook:", config.WhatsappWebhook)
-	client := &http.Client{Timeout: 10 * time.Second}
 
-	payload := map[string]interface{}{
+	payload, err := map[string]interface{}{
 		"source":    evt.SourceString(),
 		"timestamp": evt.Timestamp,
 		"type":      evt.Type,
 		"ids":       evt.MessageIDs,
-	}
+	}, error(nil)
 
 	if err = submitWebhook(payload); err != nil {
 		return err
