@@ -21,8 +21,10 @@ func forwardToWebhook(evt *events.Message) error {
 		return err
 	}
 
-	if err = submitWebhook(payload); err != nil {
-		return err
+	for _, url := range config.WhatsappWebhook {
+		if err = submitWebhook(payload, url); err != nil {
+			return err
+		}
 	}
 
 	logrus.Info("Event forwarded to webhook")
@@ -40,8 +42,10 @@ func forwardReceipt(evt *events.Receipt) error {
 		"ids":       evt.MessageIDs,
 	}, error(nil)
 
-	if err = submitWebhook(payload); err != nil {
-		return err
+	for _, url := range config.WhatsappWebhook {
+		if err = submitWebhook(payload, url); err != nil {
+			return err
+		}
 	}
 
 	logrus.Info("Event forwarded to webhook")
@@ -145,7 +149,7 @@ func createPayload(evt *events.Message) (map[string]interface{}, error) {
 	return body, nil
 }
 
-func submitWebhook(payload map[string]interface{}) error {
+func submitWebhook(payload map[string]interface{}, url string) error {
 	client := &http.Client{Timeout: 10 * time.Second}
 
 	postBody, err := json.Marshal(payload)
@@ -153,7 +157,7 @@ func submitWebhook(payload map[string]interface{}) error {
 		return pkgError.WebhookError(fmt.Sprintf("Failed to marshal body: %v", err))
 	}
 
-	req, err := http.NewRequest(http.MethodPost, config.WhatsappWebhook, bytes.NewBuffer(postBody))
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(postBody))
 	if err != nil {
 		return pkgError.WebhookError(fmt.Sprintf("error when create http object %v", err))
 	}

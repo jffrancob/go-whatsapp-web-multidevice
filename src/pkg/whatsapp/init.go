@@ -12,6 +12,7 @@ import (
 	"github.com/aldinokemal/go-whatsapp-web-multidevice/config"
 	"github.com/aldinokemal/go-whatsapp-web-multidevice/internal/websocket"
 	pkgError "github.com/aldinokemal/go-whatsapp-web-multidevice/pkg/error"
+	"github.com/aldinokemal/go-whatsapp-web-multidevice/pkg/utils"
 	"github.com/sirupsen/logrus"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/appstate"
@@ -149,6 +150,8 @@ func handler(rawEvt interface{}) {
 		}
 
 		log.Infof("Received message %s from %s (%s): %+v", evt.Info.ID, evt.Info.SourceString(), strings.Join(metaParts, ", "), evt.Message)
+		message := ExtractMessageText(evt)
+		utils.RecordMessage(evt.Info.ID, evt.Info.Sender.String(), message)
 
 		if img := evt.Message.GetImageMessage(); img != nil {
 			if path, err := ExtractMedia(config.PathStorages, img); err != nil {
@@ -164,7 +167,7 @@ func handler(rawEvt interface{}) {
 			_, _ = cli.SendMessage(context.Background(), evt.Info.Sender, &waE2E.Message{Conversation: proto.String(config.WhatsappAutoReplyMessage)})
 		}
 
-		if config.WhatsappWebhook != "" &&
+		if len(config.WhatsappWebhook) > 0 &&
 			!strings.Contains(evt.Info.SourceString(), "broadcast") &&
 			!isFromMySelf(evt.Info.SourceString()) {
 			go func(evt *events.Message) {
@@ -176,7 +179,7 @@ func handler(rawEvt interface{}) {
 	case *events.Receipt:
 		if evt.Type == types.ReceiptTypeRead || evt.Type == types.ReceiptTypeReadSelf {
 			log.Infof("%v was read by %s at %s", evt.MessageIDs, evt.SourceString(), evt.Timestamp)
-			if config.WhatsappWebhook != "" && 
+			if len(config.WhatsappWebhook) > 0 && 
 				!isFromMySelf(evt.SourceString()) {
 				go func(evt *events.Receipt) {
 					if err := forwardReceipt(evt); err != nil {
@@ -186,7 +189,7 @@ func handler(rawEvt interface{}) {
 			}
 		} else if evt.Type == types.ReceiptTypeDelivered {
 			log.Infof("%s was delivered to %s at %s", evt.MessageIDs[0], evt.SourceString(), evt.Timestamp)
-			if config.WhatsappWebhook != "" && 
+			if len(config.WhatsappWebhook) > 0 && 
 				!isFromMySelf(evt.SourceString()) {
 				go func(evt *events.Receipt) {
 					if err := forwardReceipt(evt); err != nil {
