@@ -18,6 +18,10 @@ Now that we support ARM64 for Linux:
 ## Feature
 
 - Send WhatsApp message via http API, [docs/openapi.yml](./docs/openapi.yaml) for more details
+- Mention someone
+  - `@phoneNumber`
+  - example: `Hello @628974812XXXX, @628974812XXXX`
+- Post Whatsapp Status
 - Compress image before send
 - Compress video before send
 - Change OS name become your app (it's the device name when connect via mobile)
@@ -34,10 +38,10 @@ Now that we support ARM64 for Linux:
   - `--webhook="http://yourwebhook.site/handler"`, or you can simplify
   - `-w="http://yourwebhook.site/handler"`
 - Webhook Secret
-
   Our webhook will be sent to you with an HMAC header and a sha256 default key `secret`.<br>
   You may modify this by using the option below:
   - `--webhook-secret="secret"`
+
 - For more command `./main --help`
 
 ## Required (without docker)
@@ -90,6 +94,32 @@ Now that we support ARM64 for Linux:
 docker run --detach --publish=3000:3000 --name=whatsapp --restart=always --volume=$(docker volume create --name=whatsapp):/app/storages aldinokemal2104/go-whatsapp-web-multidevice --autoreply="Dont't reply this message please"
 ```
 
+### Production Mode (docker compose)
+
+create `docker-compose.yml` file with the following configuration:
+
+```yml
+services:
+  whatsapp:
+    image: aldinokemal2104/go-whatsapp-web-multidevice
+    container_name: whatsapp
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - whatsapp:/app/storages
+    command:
+      - --basic-auth=admin:admin
+      - --port=3000
+      - --debug=true
+      - --os=Chrome
+      - --account-validation=false
+
+volumes:
+  whatsapp:
+```
+
+
 ### Production Mode (binary)
 
 - download binary from [release](https://github.com/aldinokemal/go-whatsapp-web-multidevice/releases)
@@ -98,10 +128,10 @@ You can fork or edit this source code !
 
 ## Current API
 
-- [Api Specification Document](https://bump.sh/aldinokemal/doc/go-whatsapp-web-multidevice)
-- You can check [docs/openapi.yml](./docs/openapi.yaml) for detail API or paste
-  to [SwaggerEditor](https://editor.swagger.io).
-- Furthermore you can generate HTTP Client from this API using [openapi-generator](https://openapi-generator.tech/#try)
+- [API Specification Document](https://bump.sh/aldinokemal/doc/go-whatsapp-web-multidevice).
+- Check [docs/openapi.yml](./docs/openapi.yaml) for detailed API specifications.
+- Use [SwaggerEditor](https://editor.swagger.io) to visualize the API.
+- Generate HTTP clients using [openapi-generator](https://openapi-generator.tech/#try).
 
 | Feature | Menu                         | Method | URL                           |
 |---------|------------------------------|--------|-------------------------------|
@@ -131,7 +161,7 @@ You can fork or edit this source code !
 | ✅       | Delete Message               | POST   | /message/:message_id/delete   |
 | ✅       | Edit Message                 | POST   | /message/:message_id/update   |
 | ✅       | Read Message (DM)            | POST   | /message/:message_id/read     |
-| ❌       | Star message                 | POST   | /message/:message_id/star     |
+| ❌       | Star Message                 | POST   | /message/:message_id/star     |
 | ✅       | Join Group With Link         | POST   | /group/join-with-link         |
 | ✅       | Leave Group                  | POST   | /group/leave                  |
 | ✅       | Create Group                 | POST   | /group                        |
