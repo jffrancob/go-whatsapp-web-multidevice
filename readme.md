@@ -1,5 +1,10 @@
 # WhatsApp API Multi Device Version
 
+[![Patreon](https://img.shields.io/badge/Support%20on-Patreon-orange.svg)](https://www.patreon.com/c/aldinokemal)  
+**If you're using this tools to generate income, consider supporting its development by becoming a Patreon member!**  
+Your support helps ensure the library stays maintained and receives regular updates. Join our community of supporters today!
+___
+
 ![release version](https://img.shields.io/github/v/release/aldinokemal/go-whatsapp-web-multidevice)
 
 ![Build Image](https://github.com/aldinokemal/go-whatsapp-web-multidevice/actions/workflows/build-docker-image.yaml/badge.svg)
@@ -38,9 +43,30 @@ Now that we support ARM64 for Linux:
   - `--webhook="http://yourwebhook.site/handler"`, or you can simplify
   - `-w="http://yourwebhook.site/handler"`
 - Webhook Secret
-  Our webhook will be sent to you with an HMAC header and a sha256 default key `secret`.<br>
+  Our webhook will be sent to you with an HMAC header and a sha256 default key `secret`.
+  
   You may modify this by using the option below:
   - `--webhook-secret="secret"`
+
+## Configuration
+
+You can configure the application using either command-line flags (shown above) or environment variables. Configuration can be set in three ways (in order of priority):
+
+1. Command-line flags (highest priority)
+2. Environment variables
+3. `.env` file (lowest priority)
+
+### Environment Variables
+
+To use environment variables:
+
+1. Copy `.env.example` to `.env` in your project root
+2. Modify the values in `.env` according to your needs
+3. Or set the same variables as system environment variables
+
+See [.env.example](./src/.env.example) for all available configuration options.
+
+Note: Command-line flags will override any values set in environment variables or `.env` file.
 
 - For more command `./main --help`
 
@@ -119,6 +145,28 @@ volumes:
   whatsapp:
 ```
 
+or with env file
+
+```yml
+services:
+  whatsapp:
+    image: aldinokemal2104/go-whatsapp-web-multidevice
+    container_name: whatsapp
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - whatsapp:/app/storages
+    environment:
+      - APP_BASIC_AUTH=admin:admin
+      - APP_PORT=3000
+      - APP_DEBUG=true
+      - APP_OS=Chrome
+      - APP_ACCOUNT_VALIDATION=false
+
+volumes:
+  whatsapp:
+```
 
 ### Production Mode (binary)
 
@@ -146,6 +194,7 @@ You can fork or edit this source code !
 | ✅       | User My Groups               | GET    | /user/my/groups               |
 | ✅       | User My Newsletter           | GET    | /user/my/newsletters          |
 | ✅       | User My Privacy Setting      | GET    | /user/my/privacy              |
+| ✅       | User My Contacts             | GET    | /user/my/contacts             |
 | ✅       | Send Message                 | POST   | /send/message                 |
 | ✅       | Send Image                   | POST   | /send/image                   |
 | ✅       | Send Audio                   | POST   | /send/audio                   |

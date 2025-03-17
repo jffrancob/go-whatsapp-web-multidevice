@@ -1,10 +1,15 @@
 package utils
 
 import (
+	"bytes"
 	"fmt"
+	"image"
+	_ "image/gif"  // Register GIF format
+	_ "image/jpeg" // For JPEG encoding
+	_ "image/png"  // For PNG encoding
 	"io"
-	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -14,6 +19,8 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/aldinokemal/go-whatsapp-web-multidevice/config"
+	"github.com/sirupsen/logrus"
+	_ "golang.org/x/image/webp" // Register WebP format
 )
 
 // RemoveFile is removing file with delay
@@ -69,52 +76,143 @@ type Metadata struct {
 	Description string
 	Image       string
 	ImageThumb  []byte
+	Height      *uint32
+	Width       *uint32
 }
 
-func GetMetaDataFromURL(url string) (meta Metadata) {
-	// Send an HTTP GET request to the website
-	response, err := http.Get(url)
+func GetMetaDataFromURL(urlStr string) (meta Metadata, err error) {
+	// Create HTTP client with timeout
+	client := &http.Client{
+		Timeout: 15 * time.Second,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) >= 10 {
+				return fmt.Errorf("too many redirects")
+			}
+			return nil
+		},
+	}
+
+	// Parse the base URL for resolving relative URLs later
+	baseURL, err := url.Parse(urlStr)
 	if err != nil {
-		log.Fatal(err)
+		return meta, fmt.Errorf("invalid URL: %v", err)
+	}
+
+	// Send an HTTP GET request to the website
+	response, err := client.Get(urlStr)
+	if err != nil {
+		return meta, err
 	}
 	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return meta, fmt.Errorf("HTTP request failed with status: %s", response.Status)
+	}
 
 	// Parse the HTML document
 	document, err := goquery.NewDocumentFromReader(response.Body)
 	if err != nil {
-		log.Fatal(err)
+		return meta, err
 	}
 
 	document.Find("meta[name='description']").Each(func(index int, element *goquery.Selection) {
 		meta.Description, _ = element.Attr("content")
 	})
 
-	// find title
-	document.Find("title").Each(func(index int, element *goquery.Selection) {
-		meta.Title = element.Text()
+	// find title - try multiple sources
+	// First try og:title
+	document.Find("meta[property='og:title']").Each(func(index int, element *goquery.Selection) {
+		if content, exists := element.Attr("content"); exists && content != "" {
+			meta.Title = content
+		}
 	})
+	// If og:title not found, try regular title tag
+	if meta.Title == "" {
+		document.Find("title").Each(func(index int, element *goquery.Selection) {
+			meta.Title = element.Text()
+		})
+	}
 
+	// Try to find image URL from various sources
+	// First try og:image
 	document.Find("meta[property='og:image']").Each(func(index int, element *goquery.Selection) {
-		meta.Image, _ = element.Attr("content")
+		if content, exists := element.Attr("content"); exists && content != "" {
+			meta.Image = content
+		}
 	})
 
-	// If an og:image is found, download it and store its content in ImageThumb
+	// If og:image not found, try twitter:image
+	if meta.Image == "" {
+		document.Find("meta[name='twitter:image']").Each(func(index int, element *goquery.Selection) {
+			if content, exists := element.Attr("content"); exists && content != "" {
+				meta.Image = content
+			}
+		})
+	}
+
+	// If an image URL is found, resolve it if it's relative
 	if meta.Image != "" {
-		imageResponse, err := http.Get(meta.Image)
+		imgURL, err := url.Parse(meta.Image)
 		if err != nil {
-			log.Printf("Failed to download image: %v", err)
+			logrus.Warnf("Invalid image URL: %v", err)
 		} else {
-			defer imageResponse.Body.Close()
-			imageData, err := io.ReadAll(imageResponse.Body)
-			if err != nil {
-				log.Printf("Failed to read image data: %v", err)
+			// Resolve relative URLs against the base URL
+			meta.Image = baseURL.ResolveReference(imgURL).String()
+		}
+
+		// Download the image
+		imgResponse, err := client.Get(meta.Image)
+		if err != nil {
+			logrus.Warnf("Failed to download image: %v", err)
+		} else {
+			defer imgResponse.Body.Close()
+
+			if imgResponse.StatusCode != http.StatusOK {
+				logrus.Warnf("Image download failed with status: %s", imgResponse.Status)
 			} else {
-				meta.ImageThumb = imageData
+				// Check content type
+				contentType := imgResponse.Header.Get("Content-Type")
+				if !strings.HasPrefix(contentType, "image/") {
+					logrus.Warnf("URL returned non-image content type: %s", contentType)
+				} else {
+					// Read image data with size limit
+					imageData, err := io.ReadAll(io.LimitReader(imgResponse.Body, int64(config.WhatsappSettingMaxImageSize)))
+					if err != nil {
+						logrus.Warnf("Failed to read image data: %v", err)
+					} else if len(imageData) == 0 {
+						logrus.Warn("Downloaded image data is empty")
+					} else {
+						meta.ImageThumb = imageData
+
+						// Validate image by decoding it
+						imageReader := bytes.NewReader(imageData)
+						img, _, err := image.Decode(imageReader)
+						if err != nil {
+							logrus.Warnf("Failed to decode image: %v", err)
+						} else {
+							bounds := img.Bounds()
+							width := uint32(bounds.Max.X - bounds.Min.X)
+							height := uint32(bounds.Max.Y - bounds.Min.Y)
+
+							// Check if image is square (1:1 ratio)
+							if width == height && width <= 200 {
+								// For small square images, leave width and height as nil
+								meta.Width = nil
+								meta.Height = nil
+							} else {
+								meta.Width = &width
+								meta.Height = &height
+							}
+
+							logrus.Debugf("Image dimensions: %dx%d", width, height)
+						}
+					}
+				}
 			}
 		}
 	}
 
-	return meta
+	return meta, nil
 }
 
 // ContainsMention is checking if message contains mention, then return only mention without @

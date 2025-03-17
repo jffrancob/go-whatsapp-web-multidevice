@@ -1,4 +1,3 @@
-version: '3.9'
 services:
   whatsapp_go:
     logging:
@@ -13,6 +12,8 @@ services:
     build:
       context: .
       dockerfile: ./docker/golang.Dockerfile
-    restart: 'always'
+    restart: "on-failure"
     ports:
       - "3000:3000"
+    env_file:
+      - src/.env
