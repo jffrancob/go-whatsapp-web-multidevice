@@ -23,3 +23,5 @@ WORKDIR /app
 COPY --from=builder /app/whatsapp /app/whatsapp
 # Run the binary.
 ENTRYPOINT ["/app/whatsapp"]
+
+CMD [ "rest" ]

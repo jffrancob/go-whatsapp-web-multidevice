@@ -23,7 +23,9 @@ func TestValidateSendMessage(t *testing.T) {
 		{
 			name: "should success with phone and message",
 			args: args{request: domainSend.MessageRequest{
-				Phone:   "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				Message: "Hello this is testing",
 			}},
 			err: nil,
@@ -31,7 +33,9 @@ func TestValidateSendMessage(t *testing.T) {
 		{
 			name: "should error with empty phone",
 			args: args{request: domainSend.MessageRequest{
-				Phone:   "",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "",
+				},
 				Message: "Hello this is testing",
 			}},
 			err: pkgError.ValidationError("phone: cannot be blank."),
@@ -39,7 +43,9 @@ func TestValidateSendMessage(t *testing.T) {
 		{
 			name: "should error with empty message",
 			args: args{request: domainSend.MessageRequest{
-				Phone:   "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				Message: "",
 			}},
 			err: pkgError.ValidationError("message: cannot be blank."),
@@ -72,7 +78,9 @@ func TestValidateSendImage(t *testing.T) {
 		{
 			name: "should success with normal condition",
 			args: args{request: domainSend.ImageRequest{
-				Phone:   "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				Caption: "Hello this is testing",
 				Image:   image,
 			}},
@@ -81,7 +89,9 @@ func TestValidateSendImage(t *testing.T) {
 		{
 			name: "should error with empty phone",
 			args: args{request: domainSend.ImageRequest{
-				Phone: "",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "",
+				},
 				Image: image,
 			}},
 			err: pkgError.ValidationError("phone: cannot be blank."),
@@ -89,7 +99,9 @@ func TestValidateSendImage(t *testing.T) {
 		{
 			name: "should error with empty image",
 			args: args{request: domainSend.ImageRequest{
-				Phone: "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				Image: nil,
 			}},
 			err: pkgError.ValidationError("either Image or ImageURL must be provided"),
@@ -97,7 +109,9 @@ func TestValidateSendImage(t *testing.T) {
 		{
 			name: "should error with invalid image type",
 			args: args{request: domainSend.ImageRequest{
-				Phone: "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				Image: &multipart.FileHeader{
 					Filename: "sample-image.pdf",
 					Size:     100,
@@ -134,24 +148,30 @@ func TestValidateSendFile(t *testing.T) {
 		{
 			name: "should success with normal condition",
 			args: args{request: domainSend.FileRequest{
-				Phone: "1728937129312@s.whatsapp.net",
-				File:  file,
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
+				File: file,
 			}},
 			err: nil,
 		},
 		{
 			name: "should error with empty phone",
 			args: args{request: domainSend.FileRequest{
-				Phone: "",
-				File:  file,
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "",
+				},
+				File: file,
 			}},
 			err: pkgError.ValidationError("phone: cannot be blank."),
 		},
 		{
 			name: "should error with empty file",
 			args: args{request: domainSend.FileRequest{
-				Phone: "1728937129312@s.whatsapp.net",
-				File:  nil,
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
+				File: nil,
 			}},
 			err: pkgError.ValidationError("file: cannot be blank."),
 		},
@@ -183,7 +203,9 @@ func TestValidateSendVideo(t *testing.T) {
 		{
 			name: "should success with normal condition",
 			args: args{request: domainSend.VideoRequest{
-				Phone:    "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				Caption:  "simple caption",
 				Video:    file,
 				ViewOnce: false,
@@ -194,7 +216,9 @@ func TestValidateSendVideo(t *testing.T) {
 		{
 			name: "should error with empty phone",
 			args: args{request: domainSend.VideoRequest{
-				Phone:    "",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "",
+				},
 				Caption:  "simple caption",
 				Video:    file,
 				ViewOnce: false,
@@ -205,18 +229,22 @@ func TestValidateSendVideo(t *testing.T) {
 		{
 			name: "should error with empty video",
 			args: args{request: domainSend.VideoRequest{
-				Phone:    "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				Caption:  "simple caption",
 				Video:    nil,
 				ViewOnce: false,
 				Compress: false,
 			}},
-			err: pkgError.ValidationError("video: cannot be blank."),
+			err: pkgError.ValidationError("either Video or VideoURL must be provided"),
 		},
 		{
 			name: "should error with invalid format video",
 			args: args{request: domainSend.VideoRequest{
-				Phone:   "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				Caption: "simple caption",
 				Video: func() *multipart.FileHeader {
 					return &multipart.FileHeader{
@@ -228,7 +256,35 @@ func TestValidateSendVideo(t *testing.T) {
 				ViewOnce: false,
 				Compress: false,
 			}},
-			err: pkgError.ValidationError("your video type is not allowed. please use mp4/mkv/avi"),
+			err: pkgError.ValidationError("your video type is not allowed. please use mp4/mkv/avi/x-msvideo"),
+		},
+		{
+			name: "should error with empty video and video_url",
+			args: args{request: domainSend.VideoRequest{
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
+				Caption:  "simple caption",
+				Video:    nil,
+				VideoURL: func() *string { s := ""; return &s }(),
+				ViewOnce: false,
+				Compress: false,
+			}},
+			err: pkgError.ValidationError("either Video or VideoURL must be provided"),
+		},
+		{
+			name: "should success with video_url provided",
+			args: args{request: domainSend.VideoRequest{
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
+				Caption:  "simple caption",
+				Video:    nil,
+				VideoURL: func() *string { s := "https://example.com/sample.mp4"; return &s }(),
+				ViewOnce: false,
+				Compress: false,
+			}},
+			err: nil,
 		},
 	}
 
@@ -252,7 +308,9 @@ func TestValidateSendLink(t *testing.T) {
 		{
 			name: "should success normal condition",
 			args: args{request: domainSend.LinkRequest{
-				Phone:   "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				Caption: "description",
 				Link:    "https://google.com",
 			}},
@@ -261,7 +319,9 @@ func TestValidateSendLink(t *testing.T) {
 		{
 			name: "should error with empty phone",
 			args: args{request: domainSend.LinkRequest{
-				Phone:   "",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "",
+				},
 				Caption: "description",
 				Link:    "https://google.com",
 			}},
@@ -270,7 +330,9 @@ func TestValidateSendLink(t *testing.T) {
 		{
 			name: "should error with empty caption",
 			args: args{request: domainSend.LinkRequest{
-				Phone:   "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				Caption: "",
 				Link:    "https://google.com",
 			}},
@@ -279,7 +341,9 @@ func TestValidateSendLink(t *testing.T) {
 		{
 			name: "should error with empty link",
 			args: args{request: domainSend.LinkRequest{
-				Phone:   "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				Caption: "description",
 				Link:    "",
 			}},
@@ -288,7 +352,9 @@ func TestValidateSendLink(t *testing.T) {
 		{
 			name: "should error with invalid link",
 			args: args{request: domainSend.LinkRequest{
-				Phone:   "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				Caption: "description",
 				Link:    "googlecom",
 			}},
@@ -414,7 +480,9 @@ func TestValidateSendContact(t *testing.T) {
 		{
 			name: "should success normal condition",
 			args: args{request: domainSend.ContactRequest{
-				Phone:        "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				ContactName:  "Aldino",
 				ContactPhone: "62788712738123",
 			}},
@@ -423,7 +491,9 @@ func TestValidateSendContact(t *testing.T) {
 		{
 			name: "should error with empty phone",
 			args: args{request: domainSend.ContactRequest{
-				Phone:        "",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "",
+				},
 				ContactName:  "Aldino",
 				ContactPhone: "62788712738123",
 			}},
@@ -432,7 +502,9 @@ func TestValidateSendContact(t *testing.T) {
 		{
 			name: "should error with empty contact name",
 			args: args{request: domainSend.ContactRequest{
-				Phone:        "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				ContactName:  "",
 				ContactPhone: "62788712738123",
 			}},
@@ -441,7 +513,9 @@ func TestValidateSendContact(t *testing.T) {
 		{
 			name: "should error with empty contact phone",
 			args: args{request: domainSend.ContactRequest{
-				Phone:        "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				ContactName:  "Aldino",
 				ContactPhone: "",
 			}},
@@ -469,7 +543,9 @@ func TestValidateSendLocation(t *testing.T) {
 		{
 			name: "should success normal condition",
 			args: args{request: domainSend.LocationRequest{
-				Phone:     "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				Latitude:  "-7.797068",
 				Longitude: "110.370529",
 			}},
@@ -478,7 +554,9 @@ func TestValidateSendLocation(t *testing.T) {
 		{
 			name: "should error with empty phone",
 			args: args{request: domainSend.LocationRequest{
-				Phone:     "",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "",
+				},
 				Latitude:  "-7.797068",
 				Longitude: "110.370529",
 			}},
@@ -487,7 +565,9 @@ func TestValidateSendLocation(t *testing.T) {
 		{
 			name: "should error with empty latitude",
 			args: args{request: domainSend.LocationRequest{
-				Phone:     "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				Latitude:  "",
 				Longitude: "110.370529",
 			}},
@@ -496,7 +576,9 @@ func TestValidateSendLocation(t *testing.T) {
 		{
 			name: "should error with empty longitude",
 			args: args{request: domainSend.LocationRequest{
-				Phone:     "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				Latitude:  "-7.797068",
 				Longitude: "",
 			}},
@@ -505,7 +587,9 @@ func TestValidateSendLocation(t *testing.T) {
 		{
 			name: "should error with invalid latitude",
 			args: args{request: domainSend.LocationRequest{
-				Phone:     "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				Latitude:  "ABCDEF",
 				Longitude: "110.370529",
 			}},
@@ -514,7 +598,9 @@ func TestValidateSendLocation(t *testing.T) {
 		{
 			name: "should error with invalid latitude",
 			args: args{request: domainSend.LocationRequest{
-				Phone:     "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				Latitude:  "-7.797068",
 				Longitude: "ABCDEF",
 			}},
@@ -548,7 +634,9 @@ func TestValidateSendAudio(t *testing.T) {
 		{
 			name: "should success with normal condition",
 			args: args{request: domainSend.AudioRequest{
-				Phone: "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				Audio: audio,
 			}},
 			err: nil,
@@ -556,7 +644,9 @@ func TestValidateSendAudio(t *testing.T) {
 		{
 			name: "should error with empty phone",
 			args: args{request: domainSend.AudioRequest{
-				Phone: "",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "",
+				},
 				Audio: audio,
 			}},
 			err: pkgError.ValidationError("phone: cannot be blank."),
@@ -564,15 +654,19 @@ func TestValidateSendAudio(t *testing.T) {
 		{
 			name: "should error with empty audio",
 			args: args{request: domainSend.AudioRequest{
-				Phone: "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				Audio: nil,
 			}},
-			err: pkgError.ValidationError("audio: cannot be blank."),
+			err: pkgError.ValidationError("either Audio or AudioURL must be provided"),
 		},
 		{
 			name: "should error with invalid audio type",
 			args: args{request: domainSend.AudioRequest{
-				Phone: "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				Audio: &multipart.FileHeader{
 					Filename: "sample-audio.txt",
 					Size:     100,
@@ -603,7 +697,9 @@ func TestValidateSendPoll(t *testing.T) {
 		{
 			name: "should success with normal condition",
 			args: args{request: domainSend.PollRequest{
-				Phone:     "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				Question:  "What is your favorite color?",
 				Options:   []string{"Red", "Blue", "Green"},
 				MaxAnswer: 1,
@@ -613,7 +709,9 @@ func TestValidateSendPoll(t *testing.T) {
 		{
 			name: "should error with empty phone",
 			args: args{request: domainSend.PollRequest{
-				Phone:     "",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "",
+				},
 				Question:  "What is your favorite color?",
 				Options:   []string{"Red", "Blue", "Green"},
 				MaxAnswer: 1,
@@ -623,7 +721,9 @@ func TestValidateSendPoll(t *testing.T) {
 		{
 			name: "should error with empty question",
 			args: args{request: domainSend.PollRequest{
-				Phone:     "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				Question:  "",
 				Options:   []string{"Red", "Blue", "Green"},
 				MaxAnswer: 1,
@@ -633,7 +733,9 @@ func TestValidateSendPoll(t *testing.T) {
 		{
 			name: "should error with empty options",
 			args: args{request: domainSend.PollRequest{
-				Phone:     "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				Question:  "What is your favorite color?",
 				Options:   []string{},
 				MaxAnswer: 5,
@@ -643,7 +745,9 @@ func TestValidateSendPoll(t *testing.T) {
 		{
 			name: "should error with duplicate options",
 			args: args{request: domainSend.PollRequest{
-				Phone:     "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				Question:  "What is your favorite color?",
 				Options:   []string{"Red", "Red", "Green"},
 				MaxAnswer: 1,
@@ -653,7 +757,9 @@ func TestValidateSendPoll(t *testing.T) {
 		{
 			name: "should error with max answer greater than options",
 			args: args{request: domainSend.PollRequest{
-				Phone:     "1728937129312@s.whatsapp.net",
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
 				Question:  "What is your favorite color?",
 				Options:   []string{"Red", "Blue", "Green"},
 				MaxAnswer: 5,
@@ -705,6 +811,297 @@ func TestValidateSendPresence(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := ValidateSendPresence(context.Background(), tt.args.request)
+			assert.Equal(t, tt.err, err)
+		})
+	}
+}
+
+func TestValidateSendChatPresence(t *testing.T) {
+	type args struct {
+		request domainSend.ChatPresenceRequest
+	}
+	tests := []struct {
+		name string
+		args args
+		err  any
+	}{
+		{
+			name: "should success with start action",
+			args: args{request: domainSend.ChatPresenceRequest{
+				Phone:  "1728937129312@s.whatsapp.net",
+				Action: "start",
+			}},
+			err: nil,
+		},
+		{
+			name: "should success with stop action",
+			args: args{request: domainSend.ChatPresenceRequest{
+				Phone:  "1728937129312@s.whatsapp.net",
+				Action: "stop",
+			}},
+			err: nil,
+		},
+		{
+			name: "should error with empty phone",
+			args: args{request: domainSend.ChatPresenceRequest{
+				Phone:  "",
+				Action: "start",
+			}},
+			err: pkgError.ValidationError("phone: cannot be blank."),
+		},
+		{
+			name: "should error with empty action",
+			args: args{request: domainSend.ChatPresenceRequest{
+				Phone:  "1728937129312@s.whatsapp.net",
+				Action: "",
+			}},
+			err: pkgError.ValidationError("action: cannot be blank."),
+		},
+		{
+			name: "should error with invalid action",
+			args: args{request: domainSend.ChatPresenceRequest{
+				Phone:  "1728937129312@s.whatsapp.net",
+				Action: "invalid",
+			}},
+			err: pkgError.ValidationError("action: must be a valid value."),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateSendChatPresence(context.Background(), tt.args.request)
+			assert.Equal(t, tt.err, err)
+		})
+	}
+}
+
+func TestValidateDuration(t *testing.T) {
+	tests := []struct {
+		name     string
+		duration *int
+		err      any
+	}{
+		{
+			name:     "should success with nil duration",
+			duration: nil,
+			err:      nil,
+		},
+		{
+			name:     "should success with zero duration",
+			duration: func() *int { d := 0; return &d }(),
+			err:      nil,
+		},
+		{
+			name:     "should success with valid duration",
+			duration: func() *int { d := 3600; return &d }(),
+			err:      nil,
+		},
+		{
+			name:     "should success with max duration",
+			duration: func() *int { d := int(maxDuration); return &d }(),
+			err:      nil,
+		},
+		{
+			name:     "should error with negative duration",
+			duration: func() *int { d := -1; return &d }(),
+			err:      pkgError.ValidationError("duration must be between 0 and 4294967295 seconds (0 means no expiry)"),
+		},
+		{
+			name:     "should error with duration too high",
+			duration: func() *int { d := int(maxDuration) + 1; return &d }(),
+			err:      pkgError.ValidationError("duration must be between 0 and 4294967295 seconds (0 means no expiry)"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateDuration(tt.duration)
+			assert.Equal(t, tt.err, err)
+		})
+	}
+}
+
+func TestValidateSendMessage_WithDuration(t *testing.T) {
+	type args struct {
+		request domainSend.MessageRequest
+	}
+	tests := []struct {
+		name string
+		args args
+		err  any
+	}{
+		{
+			name: "should success with valid duration",
+			args: args{request: domainSend.MessageRequest{
+				BaseRequest: domainSend.BaseRequest{
+					Phone:    "1728937129312@s.whatsapp.net",
+					Duration: func() *int { d := 3600; return &d }(),
+				},
+				Message: "Hello this is testing",
+			}},
+			err: nil,
+		},
+		{
+			name: "should error with invalid duration",
+			args: args{request: domainSend.MessageRequest{
+				BaseRequest: domainSend.BaseRequest{
+					Phone:    "1728937129312@s.whatsapp.net",
+					Duration: func() *int { d := -1; return &d }(),
+				},
+				Message: "Hello this is testing",
+			}},
+			err: pkgError.ValidationError("duration must be between 0 and 4294967295 seconds (0 means no expiry)"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateSendMessage(context.Background(), tt.args.request)
+			assert.Equal(t, tt.err, err)
+		})
+	}
+}
+
+func TestValidateSendImage_WithImageURL(t *testing.T) {
+	type args struct {
+		request domainSend.ImageRequest
+	}
+	tests := []struct {
+		name string
+		args args
+		err  any
+	}{
+		{
+			name: "should success with image URL",
+			args: args{request: domainSend.ImageRequest{
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
+				Caption:  "Hello this is testing",
+				ImageURL: func() *string { s := "https://example.com/image.jpg"; return &s }(),
+			}},
+			err: nil,
+		},
+		{
+			name: "should error with empty image URL",
+			args: args{request: domainSend.ImageRequest{
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
+				Caption:  "Hello this is testing",
+				ImageURL: func() *string { s := ""; return &s }(),
+			}},
+			err: pkgError.ValidationError("either Image or ImageURL must be provided"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateSendImage(context.Background(), tt.args.request)
+			assert.Equal(t, tt.err, err)
+		})
+	}
+}
+
+func TestValidateSendFile_WithDuration(t *testing.T) {
+	file := &multipart.FileHeader{
+		Filename: "sample-file.pdf",
+		Size:     100,
+		Header:   map[string][]string{"Content-Type": {"application/pdf"}},
+	}
+
+	type args struct {
+		request domainSend.FileRequest
+	}
+	tests := []struct {
+		name string
+		args args
+		err  any
+	}{
+		{
+			name: "should success with valid duration",
+			args: args{request: domainSend.FileRequest{
+				BaseRequest: domainSend.BaseRequest{
+					Phone:    "1728937129312@s.whatsapp.net",
+					Duration: func() *int { d := 3600; return &d }(),
+				},
+				File: file,
+			}},
+			err: nil,
+		},
+		{
+			name: "should error with invalid duration",
+			args: args{request: domainSend.FileRequest{
+				BaseRequest: domainSend.BaseRequest{
+					Phone:    "1728937129312@s.whatsapp.net",
+					Duration: func() *int { d := -1; return &d }(),
+				},
+				File: file,
+			}},
+			err: pkgError.ValidationError("duration must be between 0 and 4294967295 seconds (0 means no expiry)"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateSendFile(context.Background(), tt.args.request)
+			assert.Equal(t, tt.err, err)
+		})
+	}
+}
+
+func TestValidateSendAudio_WithDuration(t *testing.T) {
+	audio := &multipart.FileHeader{
+		Filename: "sample-audio.mp3",
+		Size:     100,
+		Header:   map[string][]string{"Content-Type": {"audio/mpeg"}},
+	}
+
+	type args struct {
+		request domainSend.AudioRequest
+	}
+	tests := []struct {
+		name string
+		args args
+		err  any
+	}{
+		{
+			name: "should success with valid duration and audio file",
+			args: args{request: domainSend.AudioRequest{
+				BaseRequest: domainSend.BaseRequest{
+					Phone:    "1728937129312@s.whatsapp.net",
+					Duration: func() *int { d := 3600; return &d }(),
+				},
+				Audio: audio,
+			}},
+			err: nil,
+		},
+		{
+			name: "should success with audio URL",
+			args: args{request: domainSend.AudioRequest{
+				BaseRequest: domainSend.BaseRequest{
+					Phone: "1728937129312@s.whatsapp.net",
+				},
+				AudioURL: func() *string { s := "https://example.com/audio.mp3"; return &s }(),
+			}},
+			err: nil,
+		},
+		{
+			name: "should error with invalid duration",
+			args: args{request: domainSend.AudioRequest{
+				BaseRequest: domainSend.BaseRequest{
+					Phone:    "1728937129312@s.whatsapp.net",
+					Duration: func() *int { d := -1; return &d }(),
+				},
+				Audio: audio,
+			}},
+			err: pkgError.ValidationError("duration must be between 0 and 4294967295 seconds (0 means no expiry)"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateSendAudio(context.Background(), tt.args.request)
 			assert.Equal(t, tt.err, err)
 		})
 	}

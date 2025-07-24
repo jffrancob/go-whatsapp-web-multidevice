@@ -1,20 +1,13 @@
 package group
 
 import (
-	"context"
+	"mime/multipart"
 	"time"
 
 	"go.mau.fi/whatsmeow"
 )
 
-type IGroupService interface {
-	JoinGroupWithLink(ctx context.Context, request JoinGroupWithLinkRequest) (groupID string, err error)
-	LeaveGroup(ctx context.Context, request LeaveGroupRequest) (err error)
-	CreateGroup(ctx context.Context, request CreateGroupRequest) (groupID string, err error)
-	ManageParticipant(ctx context.Context, request ParticipantRequest) (result []ParticipantStatus, err error)
-	GetGroupRequestParticipants(ctx context.Context, request GetGroupRequestParticipantsRequest) (result []GetGroupRequestParticipantsResponse, err error)
-	ManageGroupRequestParticipants(ctx context.Context, request GroupRequestParticipantsRequest) (result []ParticipantStatus, err error)
-}
+// NOTE: IGroupUsecase is now defined in interfaces.go with proper segregation
 
 type JoinGroupWithLinkRequest struct {
 	Link string `json:"link" form:"link"`
@@ -54,4 +47,58 @@ type GroupRequestParticipantsRequest struct {
 	GroupID      string                             `json:"group_id" form:"group_id"`
 	Participants []string                           `json:"participants" form:"participants"`
 	Action       whatsmeow.ParticipantRequestChange `json:"action" form:"action"`
+}
+
+type SetGroupPhotoRequest struct {
+	GroupID string                `json:"group_id" form:"group_id"`
+	Photo   *multipart.FileHeader `json:"photo" form:"photo"`
+}
+
+type SetGroupPhotoResponse struct {
+	PictureID string `json:"picture_id"`
+	Message   string `json:"message"`
+}
+
+type SetGroupNameRequest struct {
+	GroupID string `json:"group_id" form:"group_id"`
+	Name    string `json:"name" form:"name"`
+}
+
+type SetGroupLockedRequest struct {
+	GroupID string `json:"group_id" form:"group_id"`
+	Locked  bool   `json:"locked" form:"locked"`
+}
+
+type SetGroupAnnounceRequest struct {
+	GroupID  string `json:"group_id" form:"group_id"`
+	Announce bool   `json:"announce" form:"announce"`
+}
+
+type SetGroupTopicRequest struct {
+	GroupID string `json:"group_id" form:"group_id"`
+	Topic   string `json:"topic" form:"topic"`
+}
+
+type GetGroupInfoFromLinkRequest struct {
+	Link string `json:"link" form:"link"`
+}
+
+type GetGroupInfoFromLinkResponse struct {
+	GroupID          string    `json:"group_id"`
+	Name             string    `json:"name"`
+	Topic            string    `json:"topic"`
+	CreatedAt        time.Time `json:"created_at"`
+	ParticipantCount int       `json:"participant_count"`
+	IsLocked         bool      `json:"is_locked"`
+	IsAnnounce       bool      `json:"is_announce"`
+	IsEphemeral      bool      `json:"is_ephemeral"`
+	Description      string    `json:"description"`
+}
+
+type GroupInfoRequest struct {
+	GroupID string `json:"group_id" query:"group_id"`
+}
+
+type GroupInfoResponse struct {
+	Data any `json:"data"`
 }

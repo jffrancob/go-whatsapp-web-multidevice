@@ -1,107 +1,125 @@
 package cmd
 
 import (
+	"context"
+	"database/sql"
 	"embed"
 	"fmt"
-	"log"
-	"net/http"
+	"go.mau.fi/whatsmeow/store/sqlstore"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/aldinokemal/go-whatsapp-web-multidevice/config"
-	"github.com/aldinokemal/go-whatsapp-web-multidevice/internal/rest"
-	"github.com/aldinokemal/go-whatsapp-web-multidevice/internal/rest/helpers"
-	"github.com/aldinokemal/go-whatsapp-web-multidevice/internal/rest/middleware"
-	"github.com/aldinokemal/go-whatsapp-web-multidevice/internal/websocket"
+	domainApp "github.com/aldinokemal/go-whatsapp-web-multidevice/domains/app"
+	domainChat "github.com/aldinokemal/go-whatsapp-web-multidevice/domains/chat"
+	domainChatStorage "github.com/aldinokemal/go-whatsapp-web-multidevice/domains/chatstorage"
+	domainGroup "github.com/aldinokemal/go-whatsapp-web-multidevice/domains/group"
+	domainMessage "github.com/aldinokemal/go-whatsapp-web-multidevice/domains/message"
+	domainNewsletter "github.com/aldinokemal/go-whatsapp-web-multidevice/domains/newsletter"
+	domainSend "github.com/aldinokemal/go-whatsapp-web-multidevice/domains/send"
+	domainUser "github.com/aldinokemal/go-whatsapp-web-multidevice/domains/user"
+	"github.com/aldinokemal/go-whatsapp-web-multidevice/infrastructure/chatstorage"
+	"github.com/aldinokemal/go-whatsapp-web-multidevice/infrastructure/whatsapp"
 	"github.com/aldinokemal/go-whatsapp-web-multidevice/pkg/utils"
-	"github.com/aldinokemal/go-whatsapp-web-multidevice/pkg/whatsapp"
-	"github.com/aldinokemal/go-whatsapp-web-multidevice/services"
-	"github.com/dustin/go-humanize"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/basicauth"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/filesystem"
-	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/gofiber/template/html/v2"
+	"github.com/aldinokemal/go-whatsapp-web-multidevice/usecase"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"io/ioutil"
-	"github.com/json-iterator/go"
-	"gopkg.in/yaml.v2"
+	"go.mau.fi/whatsmeow"
 )
 
 var (
 	EmbedIndex embed.FS
 	EmbedViews embed.FS
+
+	// Whatsapp
+	whatsappCli *whatsmeow.Client
+
+	// Chat Storage
+	chatStorageDB   *sql.DB
+	chatStorageRepo domainChatStorage.IChatStorageRepository
+
+	// Usecase
+	appUsecase        domainApp.IAppUsecase
+	chatUsecase       domainChat.IChatUsecase
+	sendUsecase       domainSend.ISendUsecase
+	userUsecase       domainUser.IUserUsecase
+	messageUsecase    domainMessage.IMessageUsecase
+	groupUsecase      domainGroup.IGroupUsecase
+	newsletterUsecase domainNewsletter.INewsletterUsecase
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Short: "Send free whatsapp API",
-	Long: `This application is from clone https://github.com/aldinokemal/go-whatsapp-web-multidevice, 
+	Long: `This application is from clone https://github.com/aldinokemal/go-whatsapp-web-multidevice,
 you can send whatsapp over http api but your whatsapp account have to be multi device version`,
-	Run: runRest,
 }
 
 func init() {
 	// Load environment variables first
 	utils.LoadConfig(".")
 
-	// Initialize configurations, flag is higher priority than env
-	initEnvConfig()
+	time.Local = time.UTC
+
+	rootCmd.CompletionOptions.DisableDefaultCmd = true
+
+	// Initialize flags first, before any subcommands are added
 	initFlags()
+
+	// Then initialize other components
+	cobra.OnInitialize(initEnvConfig, initApp)
 }
 
 // initEnvConfig loads configuration from environment variables
 func initEnvConfig() {
+	fmt.Println(viper.AllSettings())
 	// Application settings
-	if envPort := viper.GetString("APP_PORT"); envPort != "" {
+	if envPort := viper.GetString("app_port"); envPort != "" {
 		config.AppPort = envPort
 	}
-	if envDebug := viper.GetBool("APP_DEBUG"); envDebug {
+	if envDebug := viper.GetBool("app_debug"); envDebug {
 		config.AppDebug = envDebug
 	}
-	if envOs := viper.GetString("APP_OS"); envOs != "" {
+	if envOs := viper.GetString("app_os"); envOs != "" {
 		config.AppOs = envOs
 	}
-	if envBasicAuth := viper.GetString("APP_BASIC_AUTH"); envBasicAuth != "" {
+	if envBasicAuth := viper.GetString("app_basic_auth"); envBasicAuth != "" {
 		credential := strings.Split(envBasicAuth, ",")
 		config.AppBasicAuthCredential = credential
 	}
-	if envChatFlushInterval := viper.GetInt("APP_CHAT_FLUSH_INTERVAL"); envChatFlushInterval > 0 {
-		config.AppChatFlushIntervalDays = envChatFlushInterval
-	}
 
 	// Database settings
-	if envDBURI := viper.GetString("DB_URI"); envDBURI != "" {
+	if envDBURI := viper.GetString("db_uri"); envDBURI != "" {
 		config.DBURI = envDBURI
+	}
+	if envDBKEYSURI := viper.GetString("db_keys_uri"); envDBKEYSURI != "" {
+		config.DBKeysURI = envDBKEYSURI
 	}
 
 	// WhatsApp settings
-	if envAutoReply := viper.GetString("WHATSAPP_AUTO_REPLY"); envAutoReply != "" {
+	if envAutoReply := viper.GetString("whatsapp_auto_reply"); envAutoReply != "" {
 		config.WhatsappAutoReplyMessage = envAutoReply
 	}
-	if envWebhook := viper.GetString("WHATSAPP_WEBHOOK"); envWebhook != "" {
+	if viper.IsSet("whatsapp_auto_mark_read") {
+		config.WhatsappAutoMarkRead = viper.GetBool("whatsapp_auto_mark_read")
+	}
+	if envWebhook := viper.GetString("whatsapp_webhook"); envWebhook != "" {
 		webhook := strings.Split(envWebhook, ",")
 		config.WhatsappWebhook = webhook
 	}
-	if envWebhookSecret := viper.GetString("WHATSAPP_WEBHOOK_SECRET"); envWebhookSecret != "" {
+	if envWebhookSecret := viper.GetString("whatsapp_webhook_secret"); envWebhookSecret != "" {
 		config.WhatsappWebhookSecret = envWebhookSecret
 	}
-	if envAccountValidation := viper.GetBool("WHATSAPP_ACCOUNT_VALIDATION"); envAccountValidation {
-		config.WhatsappAccountValidation = envAccountValidation
-	}
-	if envChatStorage := viper.GetBool("WHATSAPP_CHAT_STORAGE"); !envChatStorage {
-		config.WhatsappChatStorage = envChatStorage
+	if viper.IsSet("whatsapp_account_validation") {
+		config.WhatsappAccountValidation = viper.GetBool("whatsapp_account_validation")
 	}
 }
 
-// initFlags sets up command line flags that override environment variables
 func initFlags() {
-	rootCmd.CompletionOptions.DisableDefaultCmd = true
-
 	// Application flags
 	rootCmd.PersistentFlags().StringVarP(
 		&config.AppPort,
@@ -109,6 +127,7 @@ func initFlags() {
 		config.AppPort,
 		"change port number with --port <number> | example: --port=8080",
 	)
+
 	rootCmd.PersistentFlags().BoolVarP(
 		&config.AppDebug,
 		"debug", "d",
@@ -127,19 +146,19 @@ func initFlags() {
 		config.AppBasicAuthCredential,
 		"basic auth credential | -b=yourUsername:yourPassword",
 	)
-	rootCmd.PersistentFlags().IntVarP(
-		&config.AppChatFlushIntervalDays,
-		"chat-flush-interval", "",
-		config.AppChatFlushIntervalDays,
-		`the interval to flush the chat storage --chat-flush-interval <number> | example: --chat-flush-interval=7`,
-	)
 
 	// Database flags
 	rootCmd.PersistentFlags().StringVarP(
 		&config.DBURI,
 		"db-uri", "",
 		config.DBURI,
-		`the database uri to store the connection data database uri (by default, we'll use sqlite3 under storages/whatsapp.db). database uri --db-uri <string> | example: --db-uri="file:storages/whatsapp.db?_foreign_keys=off or postgres://user:password@localhost:5432/whatsapp"`,
+		`the database uri to store the connection data database uri (by default, we'll use sqlite3 under storages/whatsapp.db). database uri --db-uri <string> | example: --db-uri="file:storages/whatsapp.db?_foreign_keys=on or postgres://user:password@localhost:5432/whatsapp"`,
+	)
+	rootCmd.PersistentFlags().StringVarP(
+		&config.DBKeysURI,
+		"db-keys-uri", "",
+		config.DBKeysURI,
+		`the database uri to store the keys database uri (by default, we'll use the same database uri). database uri --db-keys-uri <string> | example: --db-keys-uri="file::memory:?cache=shared&_foreign_keys=on"`,
 	)
 
 	// WhatsApp flags
@@ -148,6 +167,12 @@ func initFlags() {
 		"autoreply", "",
 		config.WhatsappAutoReplyMessage,
 		`auto reply when received message --autoreply <string> | example: --autoreply="Don't reply this message"`,
+	)
+	rootCmd.PersistentFlags().BoolVarP(
+		&config.WhatsappAutoMarkRead,
+		"auto-mark-read", "",
+		config.WhatsappAutoMarkRead,
+		`auto mark incoming messages as read --auto-mark-read <true/false> | example: --auto-mark-read=true`,
 	)
 	rootCmd.PersistentFlags().StringSliceVarP(
 		&config.WhatsappWebhook,
@@ -167,142 +192,71 @@ func initFlags() {
 		config.WhatsappAccountValidation,
 		`enable or disable account validation --account-validation <true/false> | example: --account-validation=true`,
 	)
-	rootCmd.PersistentFlags().BoolVarP(
-		&config.WhatsappChatStorage,
-		"chat-storage", "",
-		config.WhatsappChatStorage,
-		`enable or disable chat storage --chat-storage <true/false>. If you disable this, reply feature maybe not working properly | example: --chat-storage=true`,
-	)
 }
 
-func runRest(_ *cobra.Command, _ []string) {
-	if config.AppDebug {
-		config.WhatsappLogLevel = "DEBUG"
+func initChatStorage() (*sql.DB, error) {
+	connStr := fmt.Sprintf("%s?_journal_mode=WAL", config.ChatStorageURI)
+	if config.ChatStorageEnableForeignKeys {
+		connStr += "&_foreign_keys=on"
 	}
 
-	// TODO: Init Rest App
+	db, err := sql.Open("sqlite3", connStr)
+	if err != nil {
+		return nil, err
+	}
+
+	// Configure connection pool
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(5)
+
+	// Test connection
+	if err := db.Ping(); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("failed to ping database: %w", err)
+	}
+
+	return db, nil
+}
+
+func initApp() {
+	if config.AppDebug {
+		config.WhatsappLogLevel = "DEBUG"
+		logrus.SetLevel(logrus.DebugLevel)
+	}
+
 	//preparing folder if not exist
 	err := utils.CreateFolder(config.PathQrCode, config.PathSendItems, config.PathStorages, config.PathMedia)
 	if err != nil {
-		log.Fatalln(err)
+		logrus.Errorln(err)
 	}
 
-	engine := html.NewFileSystem(http.FS(EmbedIndex), ".html")
-	engine.AddFunc("isEnableBasicAuth", func(token any) bool {
-		return token != nil
-	})
-	app := fiber.New(fiber.Config{
-		Views:     engine,
-		BodyLimit: int(config.WhatsappSettingMaxVideoSize),
-	})
+	ctx := context.Background()
 
-	app.Static("/statics", "./statics")
-	app.Use("/components", filesystem.New(filesystem.Config{
-		Root:       http.FS(EmbedViews),
-		PathPrefix: "views/components",
-		Browse:     true,
-	}))
-	app.Use("/assets", filesystem.New(filesystem.Config{
-		Root:       http.FS(EmbedViews),
-		PathPrefix: "views/assets",
-		Browse:     true,
-	}))
-
-	app.Use(middleware.Recovery())
-	app.Use(middleware.BasicAuth())
-	if config.AppDebug {
-		app.Use(logger.New())
-	}
-	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*",
-		AllowHeaders: "Origin, Content-Type, Accept",
-	}))
-
-	if len(config.AppBasicAuthCredential) > 0 {
-		account := make(map[string]string)
-		for _, basicAuth := range config.AppBasicAuthCredential {
-			ba := strings.Split(basicAuth, ":")
-			if len(ba) != 2 {
-				log.Fatalln("Basic auth is not valid, please this following format <user>:<secret>")
-			}
-			account[ba[0]] = ba[1]
-		}
-
-		app.Use(basicauth.New(basicauth.Config{
-			Users: account,
-		}))
+	chatStorageDB, err = initChatStorage()
+	if err != nil {
+		// Terminate the application if chat storage fails to initialize to avoid nil pointer panics later.
+		logrus.Fatalf("failed to initialize chat storage: %v", err)
 	}
 
-	db := whatsapp.InitWaDB()
-	cli := whatsapp.InitWaCLI(db)
+	chatStorageRepo = chatstorage.NewStorageRepository(chatStorageDB)
+	chatStorageRepo.InitializeSchema()
 
-	// Service
-	appService := services.NewAppService(cli, db)
-	sendService := services.NewSendService(cli, appService)
-	userService := services.NewUserService(cli)
-	messageService := services.NewMessageService(cli)
-	groupService := services.NewGroupService(cli)
-	newsletterService := services.NewNewsletterService(cli)
-
-	// Rest
-	rest.InitRestApp(app, appService)
-	rest.InitRestSend(app, sendService)
-	rest.InitRestUser(app, userService)
-	rest.InitRestMessage(app, messageService)
-	rest.InitRestGroup(app, groupService)
-	rest.InitRestNewsletter(app, newsletterService)
-
-	app.Get("/", func(c *fiber.Ctx) error {
-		serverURL := os.Getenv("SERVER_URL")
-		if len(serverURL) != 0 {
-			apiDoc, err := ioutil.ReadFile("/docs/openapi.yaml")
-			if err != nil {
-				log.Fatalln(err)
-			}
-			var spec map[string]any
-			err = yaml.Unmarshal([]byte(apiDoc), &spec)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			delete(spec, "servers")
-			spec["servers"] = []map[string]interface{}{
-				{"url": string(serverURL)},
-			}
-			var json = jsoniter.ConfigCompatibleWithStandardLibrary
-			jsonSpec, err := json.MarshalToString(spec)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			return c.Render("views/index", fiber.Map{
-				"AppHost":        fmt.Sprintf("%s", c.BaseURL()),
-				"Spec":           jsonSpec,
-				"BasicAuthToken": c.UserContext().Value("token"),
-			})
-		}
-		return c.Render("views/index", fiber.Map{
-			"AppHost":        fmt.Sprintf("%s", c.BaseURL()),
-			"AppVersion":     config.AppVersion,
-			"BasicAuthToken": c.UserContext().Value(middleware.AuthorizationValue("BASIC_AUTH")),
-			"MaxFileSize":    humanize.Bytes(uint64(config.WhatsappSettingMaxFileSize)),
-			"MaxVideoSize":   humanize.Bytes(uint64(config.WhatsappSettingMaxVideoSize)),
-		})
-	})
-
-	websocket.RegisterRoutes(app, appService)
-	go websocket.RunHub()
-
-	// Set auto reconnect to whatsapp server after booting
-	go helpers.SetAutoConnectAfterBooting(appService)
-	// Set auto reconnect checking
-	go helpers.SetAutoReconnectChecking(cli)
-	// Start auto flush chat csv
-	if config.WhatsappChatStorage {
-		go helpers.StartAutoFlushChatStorage()
+	whatsappDB := whatsapp.InitWaDB(ctx, config.DBURI)
+	var keysDB *sqlstore.Container
+	if config.DBKeysURI != "" {
+		keysDB = whatsapp.InitWaDB(ctx, config.DBKeysURI)
 	}
 
-	if err = app.Listen(":" + config.AppPort); err != nil {
-		log.Fatalln("Failed to start: ", err.Error())
-	}
+	whatsapp.InitWaCLI(ctx, whatsappDB, keysDB, chatStorageRepo)
+
+	// Usecase
+	appUsecase = usecase.NewAppService(chatStorageRepo)
+	chatUsecase = usecase.NewChatService(chatStorageRepo)
+	sendUsecase = usecase.NewSendService(appUsecase, chatStorageRepo)
+	userUsecase = usecase.NewUserService()
+	messageUsecase = usecase.NewMessageService(chatStorageRepo)
+	groupUsecase = usecase.NewGroupService()
+	newsletterUsecase = usecase.NewNewsletterService()
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

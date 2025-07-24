@@ -1,7 +1,7 @@
 openapi: "3.0.0"
 info:
   title: WhatsApp API MultiDevice
-  version: 5.4.0
+  version: 6.9.0
   description: This API is used for sending whatsapp via API
 servers:
   - url: http://localhost:3000
@@ -14,6 +14,8 @@ tags:
     description: Send Message (Text/Image/File/Video).
   - name: message
     description: Message manipulation (revoke/react/update).
+  - name: chat
+    description: Chat conversations and messaging
   - name: group
     description: Group setting
   - name: newsletter
@@ -175,6 +177,12 @@ paths:
             type: boolean
           example: true
           description: Whether to fetch a preview of the avatar
+        - name: is_community
+          in: query
+          schema:
+            type: boolean
+          example: false
+          description: Whether to fetch a community avatar
       responses:
         '200':
           description: OK
@@ -342,6 +350,72 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorInternalServer'
+  /user/check:
+    get:
+      operationId: userCheck
+      tags:
+        - user
+      summary: Check if user is on WhatsApp
+      parameters:
+        - name: phone
+          in: query
+          schema:
+            type: string
+          example: '628912344551'
+          description: Phone number with country code
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCheckResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBadRequest'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInternalServer'
+  /user/business-profile:
+    get:
+      operationId: userBusinessProfile
+      tags:
+        - user
+      summary: Get Business Profile Information
+      description: Retrieve detailed business profile information for a WhatsApp business account
+      parameters:
+        - name: phone
+          in: query
+          required: true
+          schema:
+            type: string
+          example: '6289685028129@s.whatsapp.net'
+          description: Phone number with country code of the business account
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessProfileResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBadRequest'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInternalServer'
 
   /send/message:
     post:
@@ -367,6 +441,14 @@ paths:
                   type: string
                   example: 3EB089B9D6ADD58153C561
                   description: Message ID that you want reply
+                is_forwarded:
+                  type: boolean
+                  example: false
+                  description: Whether this is a forwarded message
+                duration:
+                  type: integer
+                  example: 3600
+                  description: Disappearing message duration in seconds (optional)
       responses:
         '200':
           description: OK
@@ -422,6 +504,14 @@ paths:
                   type: boolean
                   example: false
                   description: Compress image
+                duration:
+                  type: integer
+                  example: 3600
+                  description: Disappearing message duration in seconds (optional)
+                is_forwarded:
+                  type: boolean
+                  example: false
+                  description: Whether this is a forwarded message
       responses:
         '200':
           description: OK
@@ -461,6 +551,18 @@ paths:
                   type: string
                   format: binary
                   description: Audio to send
+                audio_url:
+                  type: string
+                  example: https://example.com/audio.mp3
+                  description: Audio URL to send
+                is_forwarded:
+                  type: boolean
+                  example: false
+                  description: Whether this is a forwarded message
+                duration:
+                  type: integer
+                  example: 3600
+                  description: Disappearing message duration in seconds (optional)
       responses:
         '200':
           description: OK
@@ -504,6 +606,14 @@ paths:
                   type: string
                   format: binary
                   description: File to send
+                is_forwarded:
+                  type: boolean
+                  example: false
+                  description: Whether this is a forwarded message
+                duration:
+                  type: integer
+                  example: 3600
+                  description: Disappearing message duration in seconds (optional)
       responses:
         '200':
           description: OK
@@ -545,16 +655,28 @@ paths:
                   description: Caption to send
                 view_once:
                   type: boolean
-                  example: 'false'
+                  example: false
                   description: View once
                 video:
                   type: string
                   format: binary
                   description: Video to send
+                video_url:
+                  type: string
+                  example: https://example.com/sample.mp4
+                  description: Video URL to send
                 compress:
                   type: boolean
-                  example: 'false'
+                  example: false
                   description: Compress video
+                duration:
+                  type: integer
+                  example: 3600
+                  description: Disappearing message duration in seconds (optional)
+                is_forwarded:
+                  type: boolean
+                  example: false
+                  description: Whether this is a forwarded message
       responses:
         '200':
           description: OK
@@ -598,6 +720,14 @@ paths:
                   type: string
                   example: '573208963960'
                   description: Contact phone number
+                is_forwarded:
+                  type: boolean
+                  example: false
+                  description: Whether this is a forwarded message
+                duration:
+                  type: integer
+                  example: 3600
+                  description: Disappearing message duration in seconds (optional)
       responses:
         '200':
           description: OK
@@ -641,6 +771,14 @@ paths:
                   type: string
                   example: 'This is a caption'
                   description: Caption to send
+                is_forwarded:
+                  type: boolean
+                  example: false
+                  description: Whether this is a forwarded message
+                duration:
+                  type: integer
+                  example: 3600
+                  description: Disappearing message duration in seconds (optional)
       responses:
         '200':
           description: OK
@@ -684,6 +822,14 @@ paths:
                   type: string
                   example: '-75.6787543'
                   description: Longitude coordinate
+                is_forwarded:
+                  type: boolean
+                  example: false
+                  description: Whether this is a forwarded message
+                duration:
+                  type: integer
+                  example: 3600
+                  description: Disappearing message duration in seconds (optional)
       responses:
         '200':
           description: OK
@@ -734,6 +880,10 @@ paths:
                   type: integer
                   description: The maximum number of answers allowed for the poll.
                   example: 2
+                duration:
+                  type: integer
+                  example: 3600
+                  description: Disappearing message duration in seconds (optional)
               required:
                 - phone
                 - question
@@ -771,13 +921,62 @@ paths:
             schema:
               type: object
               properties:
-                presence:
+                type:
                   type: string
-                  description: The presence status to send
+                  description: The presence type to send
                   enum: [available, unavailable]
                   example: 'available'
+                is_forwarded:
+                  type: boolean
+                  example: false
+                  description: Whether this is a forwarded message
               required:
-                - presence
+                - type
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBadRequest'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInternalServer'
+  /send/chat-presence:
+    post:
+      operationId: sendChatPresence
+      tags:
+        - send
+      summary: Send chat presence (typing indicator)
+      description: Send typing indicator to start or stop showing that you are composing a message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone:
+                  type: string
+                  example: '6289685024051@s.whatsapp.net'
+                  description: Phone number with country code
+                action:
+                  type: string
+                  enum: [start, stop]
+                  example: 'start'
+                  description: Action to perform - "start" to begin typing indicator, "stop" to end typing indicator
+              required:
+                - phone
+                - action
       responses:
         '200':
           description: OK
@@ -1020,6 +1219,398 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorInternalServer'
+  /message/{message_id}/star:
+    post:
+      operationId: starMessage
+      tags:
+        - message
+      summary: Star message
+      parameters:
+        - in: path
+          name: message_id
+          schema:
+            type: string
+          required: true
+          description: Message ID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone:
+                  type: string
+                  example: '62819273192397132@s.whatsapp.net'
+                  description: Phone number with country code
+              required:
+                - phone
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBadRequest'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInternalServer'
+  /message/{message_id}/unstar:
+    post:
+      operationId: unstarMessage
+      tags:
+        - message
+      summary: Unstar message
+      parameters:
+        - in: path
+          name: message_id
+          schema:
+            type: string
+          required: true
+          description: Message ID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone:
+                  type: string
+                  example: '62819273192397132@s.whatsapp.net'
+                  description: Phone number with country code
+              required:
+                - phone
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBadRequest'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInternalServer'
+
+  /chats:
+    get:
+      operationId: listChats
+      tags:
+        - chat
+      summary: Get list of chats
+      description: Retrieve a list of chat conversations with their basic information
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 25
+            maximum: 100
+          description: Maximum number of chats to return
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Number of chats to skip (for pagination)
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search chats by name
+        - name: has_media
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Filter chats that contain media messages
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatListResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBadRequest'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInternalServer'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorUnauthorized'
+  /chat/{chat_jid}/messages:
+    get:
+      operationId: getChatMessages
+      tags:
+        - chat
+      summary: Get messages from a specific chat
+      description: Retrieve messages from a specific chat conversation with filtering options
+      parameters:
+        - in: path
+          name: chat_jid
+          schema:
+            type: string
+          required: true
+          description: Chat JID (e.g., phone@s.whatsapp.net for individual or groupid@g.us for group)
+          example: '6289685028129@s.whatsapp.net'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+          description: Maximum number of messages to return
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Number of messages to skip (for pagination)
+        - name: start_time
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Filter messages from this timestamp (ISO 8601 format)
+        - name: end_time
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Filter messages until this timestamp (ISO 8601 format)
+        - name: media_only
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Only return messages with media content
+        - name: is_from_me
+          in: query
+          schema:
+            type: boolean
+          description: Filter messages by sender (true for messages sent by you, false for received messages). When both media_only=true and isFromMe=false are provided, media_only takes precedence and will return all media messages regardless of sender.
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search messages by content text
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatMessagesResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBadRequest'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorUnauthorized'
+        '404':
+          description: Chat Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorNotFound'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInternalServer'
+  /chat/{chat_jid}/label:
+    post:
+      operationId: labelChat
+      tags:
+        - chat
+      summary: Label or unlabel a chat
+      description: Apply or remove a label from a chat conversation
+      parameters:
+        - in: path
+          name: chat_jid
+          schema:
+            type: string
+          required: true
+          description: Chat JID (e.g., phone@s.whatsapp.net for individual or groupid@g.us for group)
+          example: '6289685028129@s.whatsapp.net'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                label_id:
+                  type: string
+                  example: 'label_123'
+                  description: Unique identifier for the label
+                label_name:
+                  type: string
+                  example: 'Important'
+                  description: Display name for the label
+                labeled:
+                  type: boolean
+                  example: true
+                  description: Whether to apply (true) or remove (false) the label
+              required:
+                - label_id
+                - label_name
+                - labeled
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabelChatResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBadRequest'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorUnauthorized'
+        '404':
+          description: Chat Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorNotFound'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInternalServer'
+  /chat/{chat_jid}/pin:
+    post:
+      operationId: pinChat
+      tags:
+        - chat
+      summary: Pin or unpin a chat
+      description: Pin or unpin a chat conversation to the top of the chat list
+      parameters:
+        - in: path
+          name: chat_jid
+          schema:
+            type: string
+          required: true
+          description: Chat JID (e.g., phone@s.whatsapp.net for individual or groupid@g.us for group)
+          example: '6289685028129@s.whatsapp.net'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pinned:
+                  type: boolean
+                  example: true
+                  description: Whether to pin (true) or unpin (false) the chat
+              required:
+                - pinned
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PinChatResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBadRequest'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorUnauthorized'
+        '404':
+          description: Chat Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorNotFound'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInternalServer'
+
+  /group/info:
+    get:
+      operationId: groupInfo
+      tags:
+        - group
+      summary: Group Info
+      parameters:
+        - name: group_id
+          in: query
+          schema:
+            type: string
+          example: '120363025982934543@g.us'
+          description: WhatsApp Group ID
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupInfoResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBadRequest'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInternalServer'
   /group:
     post:
       operationId: createGroup
@@ -1218,6 +1809,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorInternalServer'
+  /group/info-from-link:
+    get:
+      operationId: getGroupInfoFromLink
+      tags:
+        - group
+      summary: Get group information from invitation link
+      description: Retrieve group information without joining the group using its invitation link
+      parameters:
+        - name: link
+          in: query
+          required: true
+          schema:
+            type: string
+          example: 'https://chat.whatsapp.com/whatsappKeyJoinGroup'
+          description: WhatsApp group invitation link
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupInfoFromLinkResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBadRequest'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInternalServer'
   /group/participant-requests:
     get:
       operationId: getGroupParticipantRequests
@@ -1267,13 +1892,15 @@ paths:
                   type: string
                   example: '120363024512399999@g.us'
                   description: The group ID
-                participant_id:
-                  type: string
-                  example: '573148901850'
-                  description: The participant's WhatsApp ID to approve
+                participants:
+                  type: array
+                  items:
+                    type: string
+                  example: ['573148901850']
+                  description: Array of participant WhatsApp IDs to approve
               required:
                 - group_id
-                - participant_id
+                - participants
       responses:
         '200':
           description: OK
@@ -1309,13 +1936,15 @@ paths:
                   type: string
                   example: '120363024512399999@g.us'
                   description: The group ID
-                participant_id:
-                  type: string
-                  example: '573148901850'
-                  description: The participant's WhatsApp ID to reject
+                participants:
+                  type: array
+                  items:
+                    type: string
+                  example: ['573148901850']
+                  description: Array of participant WhatsApp IDs to reject
               required:
                 - group_id
-                - participant_id
+                - participants
       responses:
         '200':
           description: OK
@@ -1350,6 +1979,218 @@ paths:
                 group_id:
                   type: string
                   example: '120363024512399999@g.us'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBadRequest'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInternalServer'
+  /group/photo:
+    post:
+      operationId: setGroupPhoto
+      tags:
+        - group
+      summary: Set group photo
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                group_id:
+                  type: string
+                  example: '120363024512399999@g.us'
+                  description: The group ID
+                photo:
+                  type: string
+                  format: binary
+                  description: Group photo to upload (JPEG format recommended). Leave empty to remove photo.
+              required:
+                - group_id
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetGroupPhotoResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBadRequest'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInternalServer'
+  /group/name:
+    post:
+      operationId: setGroupName
+      tags:
+        - group
+      summary: Set group name
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                group_id:
+                  type: string
+                  example: '120363024512399999@g.us'
+                  description: The group ID
+                name:
+                  type: string
+                  example: 'New Group Name'
+                  description: The new group name (max 25 characters)
+                  maxLength: 25
+              required:
+                - group_id
+                - name
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBadRequest'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInternalServer'
+  /group/locked:
+    post:
+      operationId: setGroupLocked
+      tags:
+        - group
+      summary: Set group locked status
+      description: Lock/unlock group so only admins can modify group info
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                group_id:
+                  type: string
+                  example: '120363024512399999@g.us'
+                  description: The group ID
+                locked:
+                  type: boolean
+                  example: true
+                  description: Whether to lock the group (true) or unlock it (false)
+              required:
+                - group_id
+                - locked
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBadRequest'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInternalServer'
+  /group/announce:
+    post:
+      operationId: setGroupAnnounce
+      tags:
+        - group
+      summary: Set group announce mode
+      description: Enable/disable announce mode so only admins can send messages
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                group_id:
+                  type: string
+                  example: '120363024512399999@g.us'
+                  description: The group ID
+                announce:
+                  type: boolean
+                  example: true
+                  description: Whether to enable announce mode (true) or disable it (false)
+              required:
+                - group_id
+                - announce
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBadRequest'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInternalServer'
+  /group/topic:
+    post:
+      operationId: setGroupTopic
+      tags:
+        - group
+      summary: Set group topic
+      description: Set or remove group topic/description
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                group_id:
+                  type: string
+                  example: '120363024512399999@g.us'
+                  description: The group ID
+                topic:
+                  type: string
+                  example: 'Welcome to our group! Please follow the rules.'
+                  description: The group topic/description. Leave empty to remove the topic.
+              required:
+                - group_id
       responses:
         '200':
           description: OK
@@ -1425,6 +2266,55 @@ components:
             group_id:
               type: string
               example: 1203632782168851111@g.us
+    GroupInfoFromLinkResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: SUCCESS
+        message:
+          type: string
+          example: Success get group info from link
+        results:
+          type: object
+          properties:
+            group_id:
+              type: string
+              example: '120363024512399999@g.us'
+              description: The group ID
+            name:
+              type: string
+              example: 'Example Group Name'
+              description: The group name
+            topic:
+              type: string
+              example: 'Welcome to our group! Please follow the rules.'
+              description: The group topic/description
+            created_at:
+              type: string
+              format: date-time
+              example: '2024-01-15T10:30:00Z'
+              description: When the group was created
+            participant_count:
+              type: integer
+              example: 25
+              description: Number of participants in the group
+            is_locked:
+              type: boolean
+              example: false
+              description: Whether the group is locked (only admins can modify group info)
+            is_announce:
+              type: boolean
+              example: false
+              description: Whether the group is in announce mode (only admins can send messages)
+            is_ephemeral:
+              type: boolean
+              example: false
+              description: Whether the group has disappearing messages enabled
+            description:
+              type: string
+              example: 'This group is for discussing project updates'
+              description: Additional description of the group
     ManageParticipantRequest:
       type: object
       properties:
@@ -1466,6 +2356,25 @@ components:
               message:
                 type: string
                 example: Participant added
+    SetGroupPhotoResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: SUCCESS
+        message:
+          type: string
+          example: Success update group photo
+        results:
+          type: object
+          properties:
+            picture_id:
+              type: string
+              example: "1647874123"
+              description: The ID of the uploaded picture, or 'remove' if photo was removed
+            message:
+              type: string
+              example: Success update group photo
 
     UserGroupResponse:
       type: object
@@ -1712,6 +2621,36 @@ components:
         message:
           type: string
           example: field cannot be blank
+          description: 'Detail error message'
+        results:
+          type: object
+          example: null
+          description: 'additional data'
+    ErrorUnauthorized:
+      type: object
+      properties:
+        code:
+          type: string
+          example: 401
+          description: 'HTTP Status Code'
+        message:
+          type: string
+          example: Unauthorized access
+          description: 'Detail error message'
+        results:
+          type: object
+          example: null
+          description: 'additional data'
+    ErrorNotFound:
+      type: object
+      properties:
+        code:
+          type: string
+          example: 404
+          description: 'HTTP Status Code'
+        message:
+          type: string
+          example: Chat not found
           description: 'Detail error message'
         results:
           type: object
@@ -2005,3 +2944,317 @@ components:
                     type: string
                     format: date-time
                     example: "2024-10-11T21:27:29+07:00"
+    UserCheckResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: SUCCESS
+        message:
+          type: string
+          example: Success check user
+        results:
+          type: object
+          properties:
+            is_on_whatsapp:
+              type: boolean
+              example: true
+    BusinessProfileResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: SUCCESS
+        message:
+          type: string
+          example: Success get business profile
+        results:
+          type: object
+          properties:
+            jid:
+              type: string
+              example: '6289685028129@s.whatsapp.net'
+              description: Business account JID
+            email:
+              type: string
+              example: 'business@example.com'
+              description: Business email address
+            address:
+              type: string
+              example: '123 Business Street, City, Country'
+              description: Business physical address
+            categories:
+              type: array
+              description: Business categories
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: 'retail'
+                  name:
+                    type: string
+                    example: 'Retail Store'
+            profile_options:
+              type: object
+              description: Additional profile options
+              example:
+                website: 'https://example.com'
+                description: 'Business description'
+            business_hours_timezone:
+              type: string
+              example: 'Asia/Jakarta'
+              description: Business hours timezone
+            business_hours:
+              type: array
+              description: Business operating hours
+              items:
+                type: object
+                properties:
+                  day_of_week:
+                    type: string
+                    example: 'monday'
+                  mode:
+                    type: string
+                    example: 'open'
+                  open_time:
+                    type: string
+                    example: '09:00'
+                  close_time:
+                    type: string
+                    example: '18:00'
+
+    ChatListResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: SUCCESS
+        message:
+          type: string
+          example: Success get chat list
+        results:
+          type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Chat'
+            pagination:
+              type: object
+              properties:
+                limit:
+                  type: integer
+                  example: 25
+                offset:
+                  type: integer
+                  example: 0
+                total:
+                  type: integer
+                  example: 150
+
+    Chat:
+      type: object
+      properties:
+        jid:
+          type: string
+          example: '6289685028129@s.whatsapp.net'
+          description: Chat JID identifier
+        name:
+          type: string
+          example: 'John Doe'
+          description: Chat display name
+        last_message_time:
+          type: string
+          format: date-time
+          example: '2024-01-15T10:30:00Z'
+          description: Timestamp of the last message
+        ephemeral_expiration:
+          type: integer
+          example: 0
+          description: Ephemeral message expiration time in seconds (0 = disabled)
+        created_at:
+          type: string
+          format: date-time
+          example: '2024-01-10T08:00:00Z'
+          description: Chat creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          example: '2024-01-15T10:30:00Z'
+          description: Chat last update timestamp
+
+    ChatMessagesResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: SUCCESS
+        message:
+          type: string
+          example: Success get chat messages
+        results:
+          type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/ChatMessage'
+            pagination:
+              type: object
+              properties:
+                limit:
+                  type: integer
+                  example: 50
+                offset:
+                  type: integer
+                  example: 0
+                total:
+                  type: integer
+                  example: 1250
+            chat_info:
+              $ref: '#/components/schemas/Chat'
+
+    ChatMessage:
+      type: object
+      properties:
+        id:
+          type: string
+          example: '3EB0B430B6F8F1D0E053AC120E0A9E5C'
+          description: Message ID
+        chat_jid:
+          type: string
+          example: '6289685028129@s.whatsapp.net'
+          description: Chat JID this message belongs to
+        sender_jid:
+          type: string
+          example: '6289685028129@s.whatsapp.net'
+          description: Sender JID
+        content:
+          type: string
+          example: 'Hello, how are you?'
+          description: Message text content
+        timestamp:
+          type: string
+          format: date-time
+          example: '2024-01-15T10:30:00Z'
+          description: Message timestamp
+        is_from_me:
+          type: boolean
+          example: false
+          description: Whether this message was sent by the current user
+        media_type:
+          type: string
+          example: 'image'
+          nullable: true
+          description: Type of media (image, video, audio, document, etc.)
+        filename:
+          type: string
+          example: 'photo.jpg'
+          nullable: true
+          description: Original filename for media messages
+        url:
+          type: string
+          example: 'https://media.example.com/file.jpg'
+          nullable: true
+          description: Media file URL
+        file_length:
+          type: integer
+          example: 1024768
+          nullable: true
+          description: File size in bytes for media messages
+        created_at:
+          type: string
+          format: date-time
+          example: '2024-01-15T10:30:00Z'
+          description: Record creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          example: '2024-01-15T10:30:00Z'
+          description: Record last update timestamp
+
+    LabelChatResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: SUCCESS
+        message:
+          type: string
+          example: Chat labeled successfully with label 'Important'
+        results:
+          type: object
+          properties:
+            status:
+              type: string
+              example: success
+            message:
+              type: string
+              example: Chat labeled successfully with label 'Important'
+            chat_jid:
+              type: string
+              example: '6289685028129@s.whatsapp.net'
+            label_id:
+              type: string
+              example: 'label_123'
+            labeled:
+              type: boolean
+              example: true
+
+    PinChatResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: SUCCESS
+        message:
+          type: string
+          example: Chat pinned successfully
+        results:
+          type: object
+          properties:
+            status:
+              type: string
+              example: success
+            message:
+              type: string
+              example: Chat pinned successfully
+            chat_jid:
+              type: string
+              example: '6289685028129@s.whatsapp.net'
+            pinned:
+              type: boolean
+              example: true
+    GroupInfoResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 200
+        code:
+          type: string
+          example: SUCCESS
+        message:
+          type: string
+          example: Success get group info
+        results:
+          type: object
+          description: Group information object (structure may vary)
+          additionalProperties: true
+    UserGroupInfoResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 200
+        code:
+          type: string
+          example: SUCCESS
+        message:
+          type: string
+          example: Success get group info
+        results:
+          type: object
+          description: Group information object (structure may vary)
+          additionalProperties: true
