@@ -13,7 +13,7 @@ type App struct {
 	Service domainApp.IAppUsecase
 }
 
-func InitRestApp(app *fiber.App, service domainApp.IAppUsecase) App {
+func InitRestApp(app fiber.Router, service domainApp.IAppUsecase) App {
 	rest := App{Service: service}
 	app.Get("/app/login", rest.Login)
 	app.Get("/app/login-with-code", rest.LoginWithCode)
